@@ -1,16 +1,19 @@
 """
-Example strategy for Quantinsti Lecture by Blackarbs LLC.
+Copyright Blackarbs LLC.
+Use entirely at your own risk.
+This algorithm contains open source code from other sources and no claim is being
+made to that code.
 
-All rights reserved. Not liable for losses, code is for informational purposes only.
+author: Brian Christopher, CFA, Blackarbs LLC
+contact: bcr@blackarbs.com
 """
 import pandas as pd
 import numpy as np
 
 
-class NadionVerticalThrustAssembly(QCAlgorithm):
-
+class BetAgainstStreaks(QCAlgorithm):
     def Initialize(self):
-        self.SetStartDate(2000, 1, 1)  # Set Start Date
+        self.SetStartDate(2008, 1, 1)  # Set Start Date
         self.SetEndDate(2020, 12, 31)  # Set Start Date
         self.SetCash(250000)  # Set Strategy Cash
 
@@ -30,11 +33,13 @@ class NadionVerticalThrustAssembly(QCAlgorithm):
         # - coarse selection function: accepts an IEnumerable<CoarseFundamental> and returns an IEnumerable<Symbol>
         self.AddUniverse(self.CoarseSelectionFunction)
 
-        self.spy = self.AddEquity('SPY', Resolution.Minute).Symbol
+        self.spy = self.AddEquity("SPY", Resolution.Minute).Symbol
 
         self.streak_number = 5  # how many days in a row to fade
         self.allocation_pct = 0.01  # how much to allocate per trade
-        self.holdings = dict()  # to hold information on how long we have been in a position
+        self.holdings = (
+            dict()
+        )  # to hold information on how long we have been in a position
         self.max_holding_period = 5  # man number of days to hold
         self.plot_count = 0  # to track how many holdings we have on avg
 
@@ -46,8 +51,7 @@ class NadionVerticalThrustAssembly(QCAlgorithm):
 
         self.splotName = "Strategy Info"
         sPlot = Chart(self.splotName)
-        sPlot.AddSeries(Series('NumHoldings', SeriesType.Line, 0))
-        # sPlot.AddSeries(Series("Leverage", SeriesType.Line, 1))
+        sPlot.AddSeries(Series("NumHoldings", SeriesType.Line, 0))
         self.AddChart(sPlot)
 
     def CoarseSelectionFunction(self, coarse):
@@ -93,19 +97,18 @@ class NadionVerticalThrustAssembly(QCAlgorithm):
         Run once daily
         """
         hist = self.History(self.UNIVERSE, self.streak_number + 1, Resolution.Daily)
-        if 'close' in hist.columns:
-            hist = (hist[
-                        "close"
-                    ]
-                    .unstack(level=0)
-                    .astype(np.float32)
-                    .sort_index()
-                    .ffill()
-                    .fillna(0.0)
-                    )
+        if "close" in hist.columns:
+            hist = (
+                hist["close"]
+                .unstack(level=0)
+                .astype(np.float32)
+                .sort_index()
+                .ffill()
+                .fillna(0.0)
+            )
 
         else:
-            self.Debug(f'{self.Time} | close column missing from history! return empty')
+            self.Debug(f"{self.Time} | close column missing from history! return empty")
             return [], []
 
         returns = hist.pct_change().dropna().apply(np.sign)
@@ -148,7 +151,9 @@ class NadionVerticalThrustAssembly(QCAlgorithm):
             if holding_period >= self.max_holding_period:
                 self.Liquidate(holding)
                 del self.holdings[holding]
-                self.Debug(f'{self.Time} | {holding} max holding period reached liquidating')
+                self.Debug(
+                    f"{self.Time} | {holding} max holding period reached liquidating"
+                )
         return
 
     def rebalance(self):
@@ -169,7 +174,7 @@ class NadionVerticalThrustAssembly(QCAlgorithm):
         self.liquidate_stale_holdings()
 
         for short_symbol in shorts:
-            self.SetHoldings(short_symbol, -self.allocation_pct)  # TODO: consider marketonclose orders
+            self.SetHoldings(short_symbol, -self.allocation_pct)
             self.holdings[short_symbol] = 0
 
         for long_symbol in longs:
@@ -185,8 +190,8 @@ class NadionVerticalThrustAssembly(QCAlgorithm):
         return
 
     def OnData(self, data):
-        '''OnData event is the primary entry point for your algorithm. Each new data point will be pumped in here.
-            Arguments:
-                data: Slice object keyed by symbol containing the stock data
-        '''
+        """OnData event is the primary entry point for your algorithm. Each new data point will be pumped in here.
+        Arguments:
+            data: Slice object keyed by symbol containing the stock data
+        """
         pass
